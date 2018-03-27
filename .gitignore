@@ -3,8 +3,16 @@ template.txt
 mydatabase.db
 test.py
 
-# IDE
+# Username and Password
+.plm
+.wiki
+.send_email
+# .idea, sample input, confluence
 .idea/
+/.idea/
+.idea/workspace.xml
+sample input/
+confluence/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

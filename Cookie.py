@@ -36,13 +36,11 @@ class Cookie:
                                 'EP6_UTOKEN': cookie_dict[self.EP6_UTOKEN],
                                 'EP_BROWSERID': cookie_dict[self.EP_BROWSERID], 'EP_LOGINID': cookie_dict[self.EP_LOGINID]}
             elif 'PLM' in src:
-                self.cookies = {'portal_token_key': cookie_dict[self.portal_token_key], 'WMONID': cookie_dict[self.WMONID],
+                self.cookies = {'WMONID': cookie_dict[self.WMONID],
                                 'logimage.index': '0',
-                                'saveLanguage': 'en_US.EUC-KR', 'ajs_user_id': cookie_dict[self.ajs_user_id], 'ajs_group_id': cookie_dict[self.ajs_group_id],
-                                'ajs_anonymous_id': cookie_dict[self.ajs_anonymous_id],
+                                'saveLanguage': 'en_US.EUC-KR',
                                 'EPV7PTSID': cookie_dict[self.EPV7PTSID],
-                                '@EP_LOGINID': cookie_dict[self.EP_LOGINID], tlogin: cookie_dict[tlogin],
-                                'EPV7EMSID': cookie_dict[self.EPV7EMSID],
+                                '@EP_LOGINID': cookie_dict[self.EP_LOGINID],
                                 'EPV7APSID': cookie_dict[self.EPV7APSID],
                                 'CLLIVESESSIONID': cookie_dict[self.CLLIVESESSIONID],
                                 'EPV7MLSID': cookie_dict[self.EPV7MLSID],

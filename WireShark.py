@@ -1,14 +1,10 @@
 from scapy.all import *
-import sys
 import pythoncom
 from win32com.client import Dispatch
-import json
 import time
 
-class WireShark:
-    MYSINGLE_URL = 'http://samsung.net'
-    PLM_URL = 'http://splm.sec.samsung.net'
-    TARGET_IP_MYSINGLE = '112.107.220.15'
+class PLMWireShark:
+    PLM_URL = 'http://splm.sec.samsung.net/wl/tqm/statistics/getDefectByUser.do?fromPlmMainMenu=true'
     TARGET_IP_PLM = '10.43.83.21'
     payload = ''
     packet_count = 0
@@ -19,7 +15,7 @@ class WireShark:
             pythoncom.CoInitialize()
             ie = Dispatch("InternetExplorer.Application")
             ie.Visible = 0
-            ie.Navigate(WireShark.PLM_URL)
+            ie.Navigate(PLMWireShark.PLM_URL)
 
     def get_cookie_raw(self):
         return self.cookie_dict
@@ -47,6 +43,6 @@ class WireShark:
             self.parse_payload(self.payload)
         
     def execute(self):
-        WireShark.IeThread().start()
+        PLMWireShark.IeThread().start()
         time.sleep(1)
         p = sniff(filter='tcp and port 80', timeout=10, count = 5, prn = self.packet_callback, store=0)

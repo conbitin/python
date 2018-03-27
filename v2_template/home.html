@@ -1,0 +1,162 @@
+<div id="loading-progress"></div>
+<div class="main-content-report animate-bottom" style="display:none;" id="main-page">
+    <div class="main-menu">
+        <!--position_insert_menu-->
+    </div>
+
+    <!-- create layout TAB Urgent -->
+    <div id="tab_urgent_issue" style="margin-top:40px;">
+        <div class="columnLayout two-equal" data-layout="two-equal">
+            <div class="cell normal" data-type="normal">
+                <!--position_urgent_table-->
+            </div>
+            <div class="cell normal" data-type="normal">
+                <div id="div-chart-urgent" class="cell normal">
+                    <text id="title-urgent-chart" class="title_chart">Urgent Issues (All Projects)</text>
+                    <div id="div_chart_urgent" class="google_chart chart_home"></div>
+                </div>
+                <div id="div-no-issue">
+                    <h3 class="title-no-issue">This project has no issue</h3>
+                    <img class="icon-no-issue" src="https://upload.wikimedia.org/wikipedia/commons/5/58/Disponible.png" alt="no issue">
+                </div>
+            </div>
+        </div>
+
+        <div id="table_urgent" style="margin-top:60px;" >
+            <h3 id="title-urgent-table" style="margin-bottom:20px;">List of Urgent Issues</h3>
+            <table id="table_urgent_detail" class="table table-striped table-bordered" style="width:100%"></table>
+        </div>
+
+        <div id="summary_chart" class="columnLayout two-equal" data-layout="two-equal" style="margin-top:70px;">
+            <div class="cell normal" data-type="normal">
+                <text class="title_chart">Main Folder's Issues &amp; Jira Tasks</text>
+                <div id="div_chart_summary" class="google_chart chart_home"></div>
+            </div>
+            <div class="cell normal" data-type="normal">
+                <div>
+                    <text class="title_chart">Long Pending Issues (Main Folder) >=</text>
+                    <form id="select_from" name="form1" onchange="drawSelectChart('div_chart_pending')">
+                         <select id="select_option" class="select input-sm">
+                         <option value="fiveDays">5 Days</option>
+                         <option value="sevenDays">7 Days</option>
+                         </select>
+                    </form>
+                </div>
+                <div id="div_chart_pending" class="google_chart chart_home"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- create layout TAB long pending -->
+    <div id="tab_long_pending" style="margin-top:40px;">
+        <div class="columnLayout two-equal" data-layout="two-equal">
+            <div class="cell normal" data-type="normal">
+                <div>
+                    <text class="title_chart">PLM Issues Of</text>
+                    <form id="select_main_sub" name="form1" onchange="showSubMainPLM()">
+                         <select id="select_chart" class="select input-sm">
+                         <option value="main">Main Folder</option>
+                         <option value="sub">Sub &amp; MR Folder</option>
+                         </select>
+                    </form>
+                </div>
+                <div id="div_chart_main_sub" class="google_chart"></div>
+            </div>
+            <div class="cell normal" data-type="normal">
+                <text id="title-long-pending-chart" class="title_chart">Long pending issue >= 5 days</text>
+                <div id="div_chart_long_pending" class="google_chart chart_home"></div>
+            </div>
+        </div>
+        <div style="margin-top:60px;" class="title_table_pending">
+            <h3>List of Pending Issues</h3>
+            <p id="sub-title-long-pending" class="sub-title-table">This table shows list of issues in Main Folder, which are pending longer than 5 days </p>
+            <table id="table_long_pending" class="table table-striped table-bordered" style="width:100%"></table>
+        </div>
+    </div>
+
+    <!-- create layout TAB Jira Task -->
+    <div id="tab_jira_task" style="margin-top:40px;">
+        <div class="columnLayout two-equal" data-layout="two-equal">
+            <div class="cell normal" data-type="normal">
+                <text class="title_chart">Jira Tasks (Open & In Progress)</text>
+                <div id="div_chart_jira" class="google_chart chart_home"></div>
+            </div>
+
+            <div class="cell normal" data-type="normal">
+                <text class="title_chart">Jira Tasks (Done, New & In Progress)</text>
+               <div id="div_chart_jira_pie" class="google_chart chart_home"></div>
+            </div>
+        </div>
+
+        <div style="margin-top:60px;" class="title_table_jira">
+            <h3 >List of Jira Tasks</h3>
+            <p style="color:gray; margin-bottom: 25px;">This table shows list of tasks which are open or in progress in Jira (within 3 months)</p>
+            <table id="table_jira_task" class="table table-striped table-bordered" style="width:100%"></table>
+        </div>
+    </div>
+
+    <!-- create layout TAB Team detail -->
+    <div id="tab_team_detail" style="margin-top:40px;">
+        <div class="columnLayout two-equal" data-layout="two-equal">
+            <div class="cell normal" data-type="normal">
+                <div>
+                    <text class="title_chart title-pie">Total PLM Issues (including Sub&amp;MR)</text>
+                    <form id="select_detail_sub" name="form1" onchange="showTeamDetail()">
+                         <select id="select_detail_team_chart" class="select input-sm">
+                             <optgroup label="By TG">
+                                 <option value="HomeScreen & Settings">HomeScreen &amp; Settings</option>
+                                 <option value="PhoneApp">PhoneApp</option>
+                                 <option value="SolutionApp">SolutionApp</option>
+                                 <option value="SPen/SS Note">SPen/SS Note</option>
+                             </optgroup>
+                             <optgroup label="By Team">
+                                 <option value="Call">Call</option>
+                                 <option value="Contact">Contact</option>
+                                 <option value="Smart_Manager">Device Maintenance</option>
+                                 <option value="Gallery">Gallery</option>
+                                 <option value="Homescreen">Home Screen</option>
+                                 <option value="Message">Message</option>
+                                 <option value="Myfile_VoiceR">MyFile VoiceRecorder</option>
+                                 <option value="SS_Note">Samsung Note</option>
+                                 <option value="Setting">Setting</option>
+                                 <option value="Social_SVC">Social SVC</option>
+                                 <option value="SPen">SPen</option>
+                                 <option value="Splanner">Splanner</option>
+                             </optgroup>
+                         </select>
+                    </form>
+                </div>
+                <div id="div_team_detail_chart" class="google_chart"></div>
+            </div>
+            <div class="cell normal" data-type="normal"></div>
+        </div>
+        <div id="table_issue_by_team" style="margin-top:60px;" >
+            <h3>List of PLM Issues</h3>
+            <p style="color:gray; margin-bottom: 25px;">This table shows list of Total PLM issues including Sub&amp;MR Folders</p>
+            <table id="table_issue_detail" class="table table-striped table-bordered" style="width:100%"></table>
+        </div>
+    </div>
+
+    <!-- create layout TAB Work load -->
+    <div id="tab_work_load" style="margin-top:40px;">
+        <div class="columnLayout two-equal" data-layout="two-equal">
+            <div class="cell normal" data-type="normal">
+                <div>
+                    <text class="title_chart title-pie">Member Has No PLM Issue &amp; No Jira Task</text>
+                    <form id="select_work_load" name="form1" onchange="drawChartPie()">
+                        <select id="select_work" class="select input-sm">
+                        <option value="viewTG">View by TG</option>
+                        <option value="viewTeam">View by Team</option>
+                        </select>
+                    </form>
+                </div>
+                <div id="div_chart_work_load" class="google_chart"></div>
+            </div>
+            <div class="cell normal" data-type="normal">
+                <text class="title_chart" style="float: inherit!important;">10 Members Have The Highest Workload</text>
+                <div id="div_chart_top_member" style = "width: 550px; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
