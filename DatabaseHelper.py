@@ -54,7 +54,8 @@ class DatabaseHelper:
         query_command = "SELECT `index`, "
         for team in self.list_team:
             query_command += team + ","
-        query_command += " Total FROM LastWeekReport WHERE Week=?"
+        query_command = query_command[:-1]
+        query_command += " FROM LastWeekReport WHERE Week=?"
 
         cursor.execute(query_command, (week_num,))
         result = cursor.fetchall()

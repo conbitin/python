@@ -7,9 +7,11 @@ import datetime
 wiki_url = "http://mobilerndhub.sec.samsung.net/wiki/"  # Samsung DPI Wiki entry url
 space = "SVMC"
 parentTitle = "BasicApp P - Auto Report"
-pageTitle = "BA - Daily Report Test"
-# pageUrgentPrjTitle = "BA - Urgent projects"
-pageUrgentPrjTitle = "Test"
+dailyPageTitle = "BA - Daily Report"
+weeklyPageTitle = "BA - Weekly Report"
+monthlyPageTitle = "BA - Monthly Report"
+pageUrgentPrjTitle = "BA - Urgent projects"
+# pageUrgentPrjTitle = "Test"
 user = utils.open_file(".wiki")[0]
 pw = utils.open_file(".wiki")[1]
 api = Api(wiki_url, user, pw)
@@ -35,24 +37,6 @@ def updateWiki(pageTitle, htmlCode):
         page = api.addpage(name=pageTitle, spacekey=space, content=pageContent,
                            parentpage=parentTitle)
         print("View page at %s" % page.page_url)
-
-
-def get_urgent_project():
-    """ get list urgent project """
-    list = []
-    try:
-        content = api.getpagecontent(name=pageUrgentPrjTitle, spacekey=space)
-        lines = str(content).split(PRJ_MACRO_TAG)
-        for line in lines:
-            # print(line)
-            first = line.find(FIRST_PRJ_TAG)
-            end = line.rfind(LAST_PRJ_TAG)
-            if first > -1 and end > -1:
-                list.append(line[first + len(FIRST_PRJ_TAG):end])
-    except Exception:
-        print("Cannot get page %s content" % pageUrgentPrjTitle)
-
-    return list
 
 
 def getListSingleID(data):
@@ -227,7 +211,7 @@ def createLayoutMonthly(last_month_team, team_chart_line, tg_table, tg_pie):
 def makeLinkChat(mySingleId):
     """Returns <a> tag with href from single ID"""
     info_link = "mysingleim://%s"
-    return r"<a target='_blank'  href='%s'>%s</a>" % (info_link % mySingleId, mySingleId)
+    return r"<a target='_blank' href='%s'>%s</a>" % (info_link % mySingleId, mySingleId)
 
 
 def makeLinkChatGroup(listID):
@@ -236,30 +220,29 @@ def makeLinkChatGroup(listID):
     for i in range(0, len(listID)):
         strListID += str(listID[i]) + ';'
     info_link = "mysingleim://%s"
-    return r"<a style='font-size: 12px; font-style: normal;' target='_blank'  href='%s'>%s</a>" % (
+    return r"<a target='_blank' style='font-size: 12px; font-style: normal;' target='_blank'  href='%s'>%s</a>" % (
     info_link % strListID, "<br />Chat")
 
 
 def makeLinkPLM(PLMCaseCode):
     """Returns <a> tag with href from mysingleID"""
-    PLMLink = r"http://splm.sec.samsung.net/wl/tqm/defect/defectreg/getDefectCodeSearch.do?defectCode=%s"
-    return r"<a href='%s'>%s</a>" % (PLMLink % PLMCaseCode, PLMCaseCode)
+    return "<a target='_blank' href='http://splm.sec.samsung.net/wl/tqm/defect/defectreg/getDefectCodeSearch.do?defectCode=%s'>%s</a>" % (PLMCaseCode, PLMCaseCode)
 
 
 def make_link_chat(single_id, text):
     """Returns <a> tag with href from single ID"""
     info_link = "mysingleim://%s"
-    return r"<a target='_blank'  href='%s'>%s</a>" % (info_link % single_id, text)
+    return r"<a target='_blank' href='%s'>%s</a>" % (info_link % single_id, text)
 
 
 def make_link_jira(jira_key):
     jira_link = r"http://mobilerndhub.sec.samsung.net/its/browse/%s"
-    return r"<a href='%s'>%s</a>" % (jira_link % jira_key, jira_key)
+    return r"<a target='_blank' href='%s'>%s</a>" % (jira_link % jira_key, jira_key)
 
 
 def make_link_jira_with_summary(jira_key, text):
     jira_link = r"http://mobilerndhub.sec.samsung.net/its/browse/%s"
-    return r"<a href='%s'>%s</a>" % (jira_link % jira_key, text)
+    return r"<a target='_blank' href='%s'>%s</a>" % (jira_link % jira_key, text)
 
 
 def make_img_jira(link):
@@ -300,6 +283,11 @@ def create_isssue_owner(owner_list):
     html += "</p> \n </div> \n </body>"
     return html
 
+def get_updated_date(pageTitle):
+    response = requests.get("http://mobilerndhub.sec.samsung.net/wiki/rest/api/content?spaceKey=%s&title=%s" % (space, pageTitle), auth=(user, pw))
+    page_key = response.json()['results'][0]['id']
+    response = requests.get("http://mobilerndhub.sec.samsung.net/wiki/rest/api/content/%s/history" % str(page_key), auth=(user, pw))
+    return response.json()['lastUpdated']['when'][:10] #YYYY-MM-DD
 
 def get_user_key(user_name):
     request_data = requests.get("http://mobilerndhub.sec.samsung.net/wiki/rest/api/user?username=%s" % user_name,
@@ -366,11 +354,6 @@ def get_data_jira_task_list_by_team(all_data_jira_task_list, member_id_list):
             single_id = task_info['fields']['assignee']['key']
             team = ""
 
-            try:
-                number_of_jira_task_by_member[single_id] = number_of_jira_task_by_member[single_id] + 1
-            except KeyError:
-                number_of_jira_task_by_member[single_id] = 1
-
             status_jira = task_info['fields']['status']['name'].lower()
 
             if status_jira == 'in progress':
@@ -381,6 +364,11 @@ def get_data_jira_task_list_by_team(all_data_jira_task_list, member_id_list):
                 data_jira_task_for_pie_chart[1][1] += 1
 
             if status_jira == 'in progress' or status_jira == 'new':
+                try:
+                    number_of_jira_task_by_member[single_id] = number_of_jira_task_by_member[single_id] + 1
+                except KeyError:
+                    number_of_jira_task_by_member[single_id] = 1
+
                 for key, value in member_id_list.items():
                     if single_id in value:
                         team = key

@@ -31,10 +31,11 @@ def create_data_plm_jira_issue(main_summary_data, num_of_jira_task_by_team):
         num_of_task_jira = value[0] + value[1]
         num_of_issue_plm = main_summary_data[key]
 
-        if num_of_task_jira + num_of_issue_plm > 0:
-            plm_issue = [key, num_of_issue_plm, num_of_task_jira]
-            list_summary_plm.append(plm_issue)
+        plm_issue = [key, num_of_issue_plm, num_of_task_jira]
+        list_summary_plm.append(plm_issue)
 
+    # Sort by team name A -> Z
+    list_summary_plm.sort(key=lambda item : item[0])
     data_summary_plm = "var summary_data_chart = " + str([['', 'PLM Issue', 'Jira Task']] + list_summary_plm) + "; \n"
     return data_summary_plm
 
@@ -42,9 +43,13 @@ def create_data_plm_jira_issue(main_summary_data, num_of_jira_task_by_team):
 def convert_data(dict_data):
     """ convert dict data to chart """
     out_data = [["", ""]]
+    counter = 0
     for team in dict_data:
         if dict_data[team] > 0:
+            counter += 1
             out_data.append([team, dict_data[team]])
+    if counter == 1:
+        out_data.append([" ", 0])
     return out_data
 
 # if __name__ == "__main__":

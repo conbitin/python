@@ -2,11 +2,12 @@ import xlwings as xw
 import pandas as pd
 import re
 import utils
-import subprocess
+# import subprocess
 import pythoncom
 from datetime import date, datetime, timedelta
 from confluence import Api
 import WikiSubmit as Wiki
+import V2_UrgentTable
 
 LIST_MEMBER = r'sample input\\Member_Organization.xlsx'
 LIST_ISSUE = r'sample input\\DEFECT_LIST_Today_Basic.xls'
@@ -21,9 +22,11 @@ PRJ_MACRO_TAG = '</ac:structured-macro>'
 FIRST_PRJ_TAG = '<ac:parameter ac:name="title">'
 LAST_PRJ_TAG = '</ac:parameter>'
 
+list_urgent = []
 list_team = []
 list_tg = []
 list_team_of_tg = {}
+member_id_by_team = {}
 list_id_and_name_member = {}
 urgent_issue_prj_count = {}
 dfExcel = pd.DataFrame()
@@ -31,23 +34,8 @@ dfExcel = pd.DataFrame()
 owner_issue_urgent = []
 owner_issue_pending = []
 
-
 def get_urgent_project():
-    list = []
-    try:
-        content = api.getpagecontent(name=pageUrgentPrjTitle, spacekey=space)
-        lines = str(content).split(PRJ_MACRO_TAG)
-        for line in lines:
-            # print(line)
-            first = line.find(FIRST_PRJ_TAG)
-            end = line.rfind(LAST_PRJ_TAG)
-            if first > -1 and end > -1:
-                list.append(line[first + len(FIRST_PRJ_TAG):end])
-    except Exception:
-        print("Cannot get page %s content" % pageUrgentPrjTitle)
-
-    return list
-
+    return V2_UrgentTable.get_list_urgent_project()
 
 def team_member(id_member, member_id_by_team):
     for key, value in member_id_by_team.items():
@@ -75,6 +63,7 @@ def ppt_min(issue):
 def get_list_single_id_member():
     pythoncom.CoInitialize()
     try:
+        xw.App(visible=False)
         memberBook = xw.Book(LIST_MEMBER)
         memberSheet = memberBook.sheets("My Organization Member")
         tableValue = memberSheet.range('A2').expand('table').value
@@ -93,6 +82,7 @@ def get_team_info():
     """ get total info team of part """
     pythoncom.CoInitialize()
     try:
+        xw.App(visible=False)
         memberBook = xw.Book(LIST_MEMBER)
         memberSheet = memberBook.sheets("My Organization Member")
         tableValue = memberSheet.range('A2').expand('table').value
@@ -190,11 +180,13 @@ def summary_analysis_active(input_data, type_data):
 
 def read_excel_issue(file_name):
     """ read issue from excel to dataFrame """
+    pythoncom.CoInitialize()
+    xw.App(visible=False)
     issueBook = xw.Book(file_name)
     issueSheet = issueBook.sheets("DEFECT")
     pd_header = issueSheet.range('A3').expand('right').value
     num_row = len(issueSheet.range('A3').expand('down').value) + 2
-    print("number of row: ", num_row)
+    # print("number of row from input file: ", num_row)
     if num_row < 1000:
         tableValue = issueSheet.range('A4').expand('table').value
         data = pd.DataFrame(tableValue, columns=pd_header)
@@ -218,6 +210,7 @@ def read_excel_issue(file_name):
 
     length_frame = len(data)
     data = data.drop_duplicates(subset=['Case Code'], keep='first')
+    print("number of row after drop duplicated: ", length_frame)
     issueBook.close()
     return data, length_frame
 
@@ -243,7 +236,13 @@ def get_data_frame():
 
 
 def get_list_team_of_tg():
+    """ return dict team of TG """
     return list_team_of_tg
+
+
+def get_member_id_of_team():
+    """ return dict member id of Team """
+    return member_id_by_team
 
 
 def get_list_team():
@@ -261,6 +260,11 @@ def get_list_id_and_name_member():
     return list_id_and_name_member
 
 
+def get_list_urgent_prj():
+    """ return list urgent project """
+    return list_urgent
+
+
 def check_daily_comment(name_owner, comments, reg_date):
     """ check urgent issue comment yesterday """
     register_date = datetime.strptime(reg_date, '%Y-%m-%d').date()
@@ -272,6 +276,8 @@ def check_daily_comment(name_owner, comments, reg_date):
         # if register today
         return "New"
     else:
+        if not comments:
+            return "No"
         pos_cmt_latest = comments.find(title_owner)
         if pos_cmt_latest == -1:
             # issue has no comment
@@ -322,6 +328,9 @@ def convert_dict_to_arr(dict_data):
     out_data = [["", ""]]
     for key, value in dict_data.items():
         out_data.append([key, value])
+
+    # Sort by team name A -> Z
+    out_data.sort(key=lambda item : item[0])
     return out_data
 
 
@@ -342,6 +351,7 @@ def issue_analysis():
     pending_issue_amount_7 = {}
     pending_sub_mr_by_team = {}
 
+    global list_urgent
     list_urgent = get_urgent_project()
     urgent_project = [item.upper() for item in list_urgent]
     list_key_prj = [item.lower() for item in list_urgent]
@@ -354,9 +364,23 @@ def issue_analysis():
     global list_team
     global dfExcel
     global list_team_of_tg
+    global member_id_by_team
     global list_team
     global list_tg
     global list_id_and_name_member
+
+    # For schedule, we must clear first
+    urgent_issue_prj_count.clear()
+    owner_issue_urgent.clear()
+    owner_issue_pending.clear()
+    list_team.clear()
+    dfExcel = pd.DataFrame()
+    list_team_of_tg.clear()
+    member_id_by_team.clear()
+    list_team.clear()
+    list_tg.clear()
+    list_id_and_name_member.clear()
+
 
     list_tg, list_team_of_tg, list_team, numOfMember, \
     member_name_by_team, member_id_by_team, all_member_id_part, list_id_and_name_member = get_team_info()
@@ -485,7 +509,7 @@ def issue_analysis():
                         sub_mr_folder_issue[team][1] += 1
 
     long_pending_sub_mr[1:] = sorted(long_pending_sub_mr[1:], key=lambda x: -ppt_min(x))
-    subprocess.call("taskkill /IM excel.exe")
+    # subprocess.call("taskkill /IM excel.exe")
 
     pending_result = {}
 

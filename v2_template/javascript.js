@@ -1,6 +1,6 @@
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js">
 
-</script><script src="https://code.jquery.com/jquery-1.10.16.js"></script>
+</script><script src="https://code.jquery.com/jquery-3.3.1.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/dataTables.bootstrap.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
@@ -10,6 +10,7 @@
     //TODO fix issue with changing chart and insert variables for models here
     <!--position_data_chart-->
 
+    var checkTabVisited = {'tab_urgent_issue' : 0, 'tab_long_pending' : 0, 'tab_jira_task': 0, 'tab_work_load': 0, 'tab_team_detail': 0};
     google.charts.load('current', {'packages':['bar', 'corechart']});
     google.charts.setOnLoadCallback(showDailyReport);
 
@@ -19,15 +20,35 @@
         document.getElementById("likes-and-labels-container").style.display = "block";
         document.getElementById("comments-section").style.display = "block";
 
-        drawChart('div_chart_urgent', '', all_models);
-        drawChart('div_chart_summary', '', summary_data_chart);
-        drawSelectChart('div_chart_pending');
+        checkURL();
+    }
+
+    function checkURL(){
+        var URL_Hash = window.location.hash;
+        console.log("Hash from URL is: ", URL_Hash);
+        switch(URL_Hash){
+            case '':
+            case '#home':
+                showActiveTab('tab_urgent_issue');
+                break;
+            case '#plm-issues':
+                showActiveTab('tab_long_pending');
+                break;
+            case '#jira-tasks':
+                showActiveTab('tab_jira_task');
+                break;
+            case '#work-load':
+                showActiveTab('tab_work_load');
+                break;
+            case '#team-detail':
+                showActiveTab('tab_team_detail');
+                break;
+            default:
+                break;
+        }
     }
 
     $(document).ready(function() {
-        window.location.hash = "#title-text";
-        showActiveTab('tab_urgent_issue');
-        hideUrgentTable();
 
         $('#table_long_pending').DataTable({
             columns: [
@@ -36,7 +57,7 @@
                {title: 'Pending days'},
                {title: 'Title'},
                {title: 'Owner'},
-               {title: 'subTG'},
+               {title: 'SubTG'},
                {title: 'TG'},
                {title: 'Priority'}
             ]
@@ -65,7 +86,7 @@
                {title: 'Pending days'},
                {title: 'Title'},
                {title: 'Owner'},
-               {title: 'subTG'},
+               {title: 'SubTG'},
                {title: 'TG'},
                {title: 'Priority'},
                {title: 'Daily comment'}
@@ -79,37 +100,45 @@
                {title: 'Pending days'},
                {title: 'Title'},
                {title: 'Owner'},
-               {title: 'subTG'},
+               {title: 'SubTG'},
                {title: 'TG'},
                {title: 'Priority'},
-               {title: 'No Comment'}
+               {title: 'Latest Comment'}
             ]
         });
 
+       var curPrj;
        $("#table-urgent tr").click(function() {
             $(this).closest('tr').each(function() {
                 var numIssue = $(this).find('.num-issue').text(); // get number issue of project
                 var prjName = $(this).find('.prj-name').text();
                 $(this).addClass("selected").siblings().removeClass("selected");
                 //console.log("project: " +prjName + " ; num issue: "+numIssue);
-                if (numIssue > 0){
-                    prj = prjName.toLowerCase();
-                    drawChart('div_chart_urgent', '', prj_urgent_detail[prj]);
-                    document.getElementById('title-urgent-chart').innerText = "Urgent Issues (" +prj.toUpperCase()+ ")";
-                    hideShowChartUrgent('show');
-                    createUrgentTable(prj);
-                }else{
-                    hideUrgentTable();
-                    hideShowChartUrgent('hide');
+                prj = prjName.toLowerCase();
+                if (curPrj != prj) {
+                    curPrj = prj
+                    if (numIssue > 0){
+                        drawChart('div_chart_urgent', prj_urgent_detail[prj]);
+                        document.getElementById('title-urgent-chart').innerText = "Urgent Issues (" +prj.toUpperCase()+ ")";
+                        hideShowChartUrgent('show');
+                        createUrgentTable(prj);
+                    }else{
+                        hideUrgentTable();
+                        hideShowChartUrgent('hide');
+                    }
                 }
             });
        });
 
        $("#btn-show-all").click(function(){
             createUrgentTable('detail_all_urgent');
-            hideShowChartUrgent('show');
-            drawChart('div_chart_urgent', '', all_models);
-            document.getElementById('title-urgent-chart').innerText = "Urgent Issues (All Projects)";
+            if (!$("#div-chart-urgent").is(':visible') || curPrj != 'all_models') {
+                curPrj = 'all_models';
+                hideShowChartUrgent('show');
+                drawChart('div_chart_urgent', all_models);
+                document.getElementById('title-urgent-chart').innerText = "Urgent Issues (All Projects)";
+            }
+
             // remove class selected in row table
             $('#table-urgent').find('.table-primary').each(function(){
                 $(this).removeClass("selected");
@@ -121,9 +150,12 @@
 
        $("#btn-show-summary").click(function(){
             hideUrgentTable();
-            hideShowChartUrgent('show');
-            drawChart('div_chart_urgent', '', all_models);
-            document.getElementById('title-urgent-chart').innerText = "Urgent Issues (All Projects)";
+            if (!$("#div-chart-urgent").is(':visible') || curPrj != 'all_models') {
+                curPrj = 'all_models';
+                hideShowChartUrgent('show');
+                drawChart('div_chart_urgent', all_models);
+                document.getElementById('title-urgent-chart').innerText = "Urgent Issues (All Projects)";
+            }
             // remove class selected in row table
             $('#table-urgent').find('.selected').each(function(){
                 $(this).removeClass("selected");
@@ -155,6 +187,7 @@
     }
 
     function createIssueByTeamTable(team){
+        $('#table_issue_by_team').show();
         $('#table_issue_detail').dataTable().fnClearTable();
         if (dataInfoIssueTeam[team].length > 0) {
             $('#table_issue_detail').dataTable().fnAddData(dataInfoIssueTeam[team]);
@@ -176,11 +209,21 @@
     function showTeamDetail() {
         team = document.getElementById("select_detail_team_chart").value;
         var data = dataTotalTeam[team];
-        drawChartPieIssueByTeam(data);
-        createIssueByTeamTable(team);
+        if (data.length > 1){
+            drawChartPieIssueByTeam(data);
+            createIssueByTeamTable(team);
+        }else{
+            var div_chart = document.getElementById('div_team_detail_chart');
+            div_chart.innerHTML = '<p class="no-data-chart" style="top: 55% !important; left: 17% !important;" > No Issue </p>'
+            $('#table_issue_by_team').hide();
+        }
+
     }
 
+    var curTab;
     function showActiveTab(id_tab){
+        if (curTab == id_tab) { return; }
+        curTab = id_tab;
         var arr_tab = ['tab_urgent_issue', 'tab_long_pending', 'tab_jira_task', 'tab_work_load', 'tab_team_detail'];
         setActiveTab(id_tab);
         for (i = 0; i < arr_tab.length; i++){
@@ -191,24 +234,50 @@
             }
         }
         switch(id_tab){
+            case 'tab_urgent_issue':
+                if(checkTabVisited[id_tab] == 0){
+                    hideUrgentTable();
+                    drawChart('div_chart_urgent', all_models);
+                    drawChart('div_chart_summary', summary_data_chart);
+                    drawSelectChart('div_chart_pending');
+                    checkTabVisited[id_tab] = 1;
+                }
+                window.location.hash = "#home";
+                break;
             case 'tab_long_pending':
-                showSubMainPLM();
+                if(checkTabVisited[id_tab] == 0){
+                    showSubMainPLM();
+                    checkTabVisited[id_tab] = 1;
+                }
+                window.location.hash = "#plm-issues";
                 break;
             case 'tab_jira_task':
-                drawChart('div_chart_jira', '', jira_chart_input);
-                drawChartJiraPie()
+                if(checkTabVisited[id_tab] == 0){
+                    drawChart('div_chart_jira', jira_chart_input);
+                    drawChartJiraPie()
+                    checkTabVisited[id_tab] = 1;
+                }
+                window.location.hash = "#jira-tasks";
                 break;
             case 'tab_work_load':
-                drawChartPie();
-                drawChartBar();
+                if(checkTabVisited[id_tab] == 0){
+                    drawChartPie();
+                    drawChartBar();
+                    checkTabVisited[id_tab] = 1;
+                }
+                window.location.hash = "#workload";
                 break;
             case 'tab_team_detail':
-                team = document.getElementById("select_detail_team_chart").value;
-                if (team == 'HomeScreen & Settings') { // default HomeScreen & Settings
-                    var data = dataTotalTeam[team];
-                    drawChartPieIssueByTeam(data);
-                    createIssueByTeamTable(team);
+                if(checkTabVisited[id_tab] == 0){
+                    team = document.getElementById("select_detail_team_chart").value;
+                    if (team == 'HomeScreen & Settings') { // default HomeScreen & Settings
+                        var data = dataTotalTeam[team];
+                        drawChartPieIssueByTeam(data);
+                        createIssueByTeamTable(team);
+                        checkTabVisited[id_tab] = 1;
+                    }
                 }
+                window.location.hash = "#team-detail";
                 break
             default:
                 break;
@@ -253,7 +322,6 @@
                         }
                     }// end if
                 } // end for
-                result.sort(function(a, b){return b[1] - a[1]});
                 break;
 
             case 'div_chart_main_sub':
@@ -284,17 +352,30 @@
                 break
         }
 
-        var data = new google.visualization.arrayToDataTable(result);
+        if (result.length > 1) {
+            // sort team Name by a -> z
+            result.sort(function(a, b){
+                if (a[0] < b[0])
+                    return -1;
+                if ( a[0]> b[0])
+                    return 1;
+                return 0
+            });
+            var data = new google.visualization.arrayToDataTable(result);
+            var options = {
+                width: 495,
+                legend: { position: 'none' },
+                bars: 'horizontal', // Required for Material Bar Charts.
+                bar: { groupWidth: "90%" }
+            };
 
-        var options = {
-            width: 500,
-            legend: { position: 'none' },
-            bars: 'horizontal', // Required for Material Bar Charts.
-            bar: { groupWidth: "90%" }
-        };
+            var chart = new google.charts.Bar(document.getElementById(id_type_chart));
+            chart.draw(data, options);
+        }else{
+                div_chart = document.getElementById(id_type_chart);
+                div_chart.innerHTML = '<p class="no-data-chart"> No Issue </p>'
+        }
 
-        var chart = new google.charts.Bar(document.getElementById(id_type_chart));
-        chart.draw(data, options);
      };
 
     function showSubMainPLM(){
@@ -302,43 +383,53 @@
         myOption = document.getElementById("select_chart").value;
         if (myOption == 'main'){
             // show long pending chart/table Main Folder
-            drawChart('div_chart_long_pending', '', chartMainSubLongPending['main_5days']);
+            drawChart('div_chart_long_pending', chartMainSubLongPending['main_5days']);
             createTableLongPending('main_5days');
             document.getElementById('title-long-pending-chart').innerText = "Long pending issue >= 5 days";
             document.getElementById('sub-title-long-pending').innerText = "This table shows list of issues in Main Folder, which are pending >= 5 days";
         }else{
             // show long pending chart/table Sub Folder
-            drawChart('div_chart_long_pending', '', chartMainSubLongPending['sub_7days']);
+            drawChart('div_chart_long_pending', chartMainSubLongPending['sub_7days']);
             createTableLongPending('sub_7days');
             document.getElementById('title-long-pending-chart').innerText = "Long pending issue >= 7 days";
             document.getElementById('sub-title-long-pending').innerText = "This table shows list of issues in Sub & MR Folder, which are pending >= 7 days";
         }
     }
 
-    function drawChart(id_type_chart, title, data_chart) {
-        var data = new google.visualization.arrayToDataTable(data_chart);
-        var options = {
-            chart: {
-                title: title,
-            },
-            width: 500,
-            legend: { position: 'none' },
-            bars: 'horizontal', // Required for Material Bar Charts.
-            bar: { groupWidth: "90%" }
-        };
-        var chart = new google.charts.Bar(document.getElementById(id_type_chart));
-        chart.draw(data, options);
+    function drawChart(id_type_chart, data_chart) {
+        if (data_chart.length > 1){
+            var data = new google.visualization.arrayToDataTable(data_chart);
+            var options = {
+                width: 495,
+                height: 350,
+                legend: { position: 'none' },
+                bars: 'horizontal', // Required for Material Bar Charts.
+                bar: { groupWidth: "90%" }
+            };
+            var chart = new google.charts.Bar(document.getElementById(id_type_chart));
+            chart.draw(data, options);
 
-        // Add selection handler.
-        google.visualization.events.addListener(chart, 'select', function(){
-            handleEvent(chart, id_type_chart, data)
-        });
+            // Add selection handler.
+            google.visualization.events.addListener(chart, 'select', function(){
+                handleEvent(chart, id_type_chart, data)
+            });
+        }else { // if no data input
+            if (id_type_chart == 'div_chart_urgent'){
+                hideShowChartUrgent('hide');
+                $("#btn-show-all").hide();
+                $("#btn-show-summary").hide();
+                noIssueTitle = document.getElementById('title-chart-no-issue');
+                noIssueTitle.innerText = "There is no issue of urgent projects"
+            }else{
+                var div_chart = document.getElementById(id_type_chart);
+                div_chart.innerHTML = '<p class="no-data-chart"> No Issue </p>'
+            }
+        }
+
     }
 
     function drawChartPie(){
-
         <!--data_chart_pie_member_no_issue-->
-
         myOption = document.getElementById("select_work").value;
         result = [["", "Num issue pending"]];
 

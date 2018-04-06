@@ -1,13 +1,13 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 import AutoDownloadPLM as AutoPLM
-import WeeklyReport as Report
+import V2_WeeklyReport as Report
 from datetime import date, datetime
 import WikiSubmit as Wiki
 import V2_UrgentTable as Urgent
 import V2_Chart as Chart
 import ReadDataFromExcel as DataEXL
 import utils
-
+import sys
 
 def create_urgent_owner():
     issue_owner = Wiki.create_isssue_owner(DataEXL.get_urgent_owner())
@@ -23,6 +23,8 @@ def create_data_jira_task_chart(data):
     for team, value in data.items():
         list_jira.append([team] + value)
 
+    # Sort by team name A -> Z
+    list_jira.sort(key=lambda item : item[0])
     data_out = "var jira_chart_input = " + str([['', 'Jira task open', 'Jira task in progress']]
                                                + list_jira) + "; \n"
     return data_out
@@ -66,7 +68,6 @@ def create_data_top_10_member_chart(num_issue_member, num_task_member):
 
 def analysis_and_submit_wiki():
     """ Main function submit to wiki """
-    pageTitle = "BA - Daily Report Test"
     main_plm_open, main_sub_chart, data_table_long_pending, \
     data_pending_chart, data_pending_main_sub, \
     urgent_by_prj, team_list, all_member_id, member_id_list,\
@@ -88,9 +89,6 @@ def analysis_and_submit_wiki():
     num_of_jira_task_by_team, info_detail_jira_task, number_of_jira_task_by_member, data_chart_pie_jira \
         = Wiki.get_data_jira_task_list_by_team(all_data_jira_task_list, member_id_list)
 
-    for single_id, num_task in number_of_jira_task_by_member.items():
-        num_issue_of_member[single_id] += num_task
-
     data_chart_pie = create_data_work_chart(num_issue_of_member, member_id_list)
     data_top_10_member_chart = create_data_top_10_member_chart(num_issue_of_member, number_of_jira_task_by_member)
 
@@ -99,7 +97,7 @@ def analysis_and_submit_wiki():
     data_table_urgent = "var dataTableUrgent = " + str(urgent_by_prj) + "; \n"
     data_table_pending_main = "var dataTablePending = " + str(data_table_long_pending) + "; \n"
 
-    data_table_jira = data_out = "var dataJiraTask = " + str(info_detail_jira_task) + "; \n"
+    data_table_jira = "var dataJiraTask = " + str(info_detail_jira_task) + "; \n"
     data_jira_task = create_data_jira_task_chart(num_of_jira_task_by_team)
     data_summary_plm = Chart.create_data_plm_jira_issue(main_plm_open, num_of_jira_task_by_team)
 
@@ -123,9 +121,12 @@ def analysis_and_submit_wiki():
     base_html += style_css
     base_html += java_script
 
-    html = '''<ac:structured-macro ac:name="html" ac:schema-version="1" ac:macro-id="16042b08-1210-47fd-9606-052492f11da4"><ac:plain-text-body><![CDATA['''
-    html += base_html + ''']]></ac:plain-text-body></ac:structured-macro>'''
-    Wiki.updateWiki(pageTitle, html)
+    daily_report = '''<ac:structured-macro ac:name="html" ac:schema-version="1" ac:macro-id="16042b08-1210-47fd-9606-052492f11da4">
+    <ac:plain-text-body><![CDATA[''' + base_html + ''']]>
+    </ac:plain-text-body></ac:structured-macro>'''
+
+    pageTitle = "BA - Daily Report"
+    Wiki.updateWiki(pageTitle, daily_report)
 
 
 def run_daily_report():
@@ -137,6 +138,7 @@ def run_daily_report():
         AutoPLM.AutoDownloadPLM(user_name, password)
         analysis_and_submit_wiki()
 
+
 def check_time_report():
     """ check time to report during 8h30 - 18h """
     time_now = datetime.now().time()
@@ -147,21 +149,28 @@ def check_time_report():
     else:
         return False
 
-if __name__ == "__main__":
+def run_report():
     run_daily_report()
     today = date.today()
-    # today = datetime.strptime('2018-01-01', '%Y-%m-%d').date()
+    # today = datetime.strptime('2018-04-01', '%Y-%m-%d').date()
     weekDay = today.strftime("%A")
     if weekDay == 'Monday':
-        print("start submit weekly report")
-        Report.analysis_week_month(today, "Weekly")
+        last_update = datetime.strptime(Wiki.get_updated_date(Wiki.weeklyPageTitle), "%Y-%m-%d").date()
+        if last_update < today:
+            print("start submit weekly report")
+            Report.analysis_week_month(today, "Weekly")
 
     today_date = today.strftime("%d")
     if today_date == '01':
-        print("start submit monthly report")
-        Report.analysis_week_month(today, "Monthly")
+        last_update = datetime.strptime(Wiki.get_updated_date(Wiki.monthlyPageTitle), "%Y-%m-%d").date()
+        if last_update < today:
+            print("start submit monthly report")
+            Report.analysis_week_month(today, "Monthly")
+
+if __name__ == "__main__":
+    run_report()
 
     print("start schedule task")
     scheduler = BlockingScheduler()
-    scheduler.add_job(run_daily_report, 'interval', minutes=30)
+    scheduler.add_job(run_report, 'interval', minutes=30)
     scheduler.start()

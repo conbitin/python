@@ -285,4 +285,11 @@
         display: none;
     }
 
+    .no-data-chart {
+        position: absolute;
+        color: gray;
+        top: 28%;
+        left: 64%;
+    }
+
 </style>

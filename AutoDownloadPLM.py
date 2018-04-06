@@ -1,10 +1,12 @@
 import sys, os, time, shutil
 from selenium import webdriver
 import IEHelper
-from WireShark import PLMWireShark as PWS
+from WireShark import WireShark
 from MyPLM import PLM
+from MyKnoxPortal import KnoxPortal
 import ReadDataFromExcel as DataEXL
 import json
+import subprocess
 
 need_update_user_list = False  # set True when our organization is updated (for example: add new members)
 
@@ -16,12 +18,17 @@ class AutoDownloadPLM:
         self.excel_file_name = "DEFECT_LIST_Today_Basic.xls"
         self.dir_sample_input = os.getcwd() + "\\sample input\\"
 
-        self.autoLoginKnox()
-        self.cookies = self.getPLMCookie()
+        self.cookies = WireShark().get_cookie_raw('Portal')
+        if not KnoxPortal(self.cookies).isPortalLoggedIn():
+            self.autoLoginKnox()
+        self.cookies = WireShark().get_cookie_raw('PLM')
+        if not self.cookies:
+            self.restart_program()
         self.list_plm_id = self.getUserPLMidbyKnoxId()
-        self.downloadPLMissues()
+        self.downloadPLMissues(self.user_name)
 
     def autoLoginKnox(self):
+        
         IEHelper.set_zoom_100()
         self.driver = webdriver.Ie()
         self.driver.maximize_window()
@@ -34,28 +41,12 @@ class AutoDownloadPLM:
             pass
         else:
             user = self.driver.find_element_by_id('USERID')
+            user.clear()
             user.send_keys(self.user_name)
             password = self.driver.find_element_by_id('USERPASSWORD')
             password.send_keys(self.pass_word)
             button = self.driver.find_element_by_class_name('btnLogin')
             button.click()
-
-    def getPLMCookie(self):
-        cookie = {}
-        retry = 0
-
-        while not 'EP_LOGINID' in cookie and retry < 5:
-            retry += 1
-            PWS().execute()
-            time.sleep(10)
-            cookie = PWS().get_cookie_raw()
-        
-        if not 'EP_LOGINID' in cookie:
-            print("Please log in mysingle first and try again")
-            time.sleep(3)
-            self.restart_program()
-
-        return cookie
 
     def getUserPLMidbyKnoxId(self):
         global need_update_user_list
@@ -85,15 +76,22 @@ class AutoDownloadPLM:
 
         return list_user_id
 
-    def downloadPLMissues(self):
+    def downloadPLMissues(self, single_id):
         """ start download PLM """
         dest = self.dir_sample_input + self.excel_file_name
-        PLM(self.cookies).downloadPLMissues(self.list_plm_id, dest)        
+        try:
+            PLM(self.cookies).downloadPLMissues(self.list_plm_id, dest, single_id)
+        except ValueError as error:
+            print(error)
+            self.restart_program()
 
     def restart_program(self):
         """ restart program Main again """
+        print('Restarting program ...')
         try:
             self.driver.quit()
+            subprocess.call("taskkill /IM excel.exe")
+            subprocess.call("taskkill /IM iexplore.exe /T /F")
         except:
             pass
         time.sleep(5)
