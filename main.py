@@ -30,18 +30,18 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Get employee information
-    #alphabet = string.ascii_lowercase  #"abcdefghijklmnopqrstuvwxyz"
-    #reversed_alphabet = alphabet[::-1]
-    #helper = SqlLiteHelper()
+    alphabet = string.ascii_lowercase  #"abcdefghijklmnopqrstuvwxyz"
+    reversed_alphabet = alphabet[::-1]
+    helper = SqlLiteHelper()
     
-    #for c in list(reversed_alphabet):
-    #   print(c)
-    #   data = KnoxPortal(cookie).get_member_by_c(c)
-    #   helper.insert(data)
+    for c in list(reversed_alphabet):
+      print(c)
+      data = KnoxPortal(cookie).get_member_by_c(c)
+      helper.insert(data)
 
 
     # plm system
-    result = PLM(cookie).get_my_issues()
+    # result = PLM(cookie).get_my_issues()
     #print(result)
 
 

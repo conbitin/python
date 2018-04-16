@@ -2,8 +2,8 @@ import requests, json
 import os, sys
 import time
 
-user_name = "xxxxxxx"
-http_password = "xxxxxxxxxxxx"
+user_name = "duc.quynh"
+http_password = "THANKyou89"
 base_url = "confluence_wiki_url"
 request_header = {
     'Content-Type': 'application/json'
