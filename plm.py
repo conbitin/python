@@ -1,11 +1,13 @@
 import requests
+import os
+from datetime import date, timedelta
+import pandas as pd
 import json
-from cookie import Cookie
-import re
 
 class PLM:
-    def __init__(self, cookie_raw):
+    def __init__(self, cookies):
         self.session_request = requests.session()
+
         self.header = {
             'Accept': 'application/x-ms-application, image/jpeg, application/xaml+xml, image/gif, image/pjpeg, application/x-ms-xbap, application/x-shockwave-flash, */*'
             , 'Accept-Language': 'en-US'
@@ -15,18 +17,42 @@ class PLM:
             , 'Accept-Encoding': 'gzip, deflate'
             , 'DNT': '1'
             , 'Connection': 'Keep-Alive'
+            , 'Content-Type': 'application/x-www-form-urlencoded'
+            , 'Referer': 'http://splm.sec.samsung.net/wl/tqm/defect/defectreg/getDefectSearchDetail.do'
         }
-        self.url = "http://splm.sec.samsung.net/wl/tqm/defect/defectsol/getDefectSolDefaultData.do"
-        self.cookies = Cookie(cookie_raw, 'PLM').get_cookie()
+
+        self.url = "http://splm.sec.samsung.net/wl/tqm/defect/defectreg/getDefectCombinedExcel.do"
+
+        self.cookies = cookies
+
+        self.data = ""
 
     def get_my_issues(self):
         if not self.cookies:
             return "Cannot get cookie"
-        response = requests.post(self.url, headers=self.header, cookies=self.cookies)
+        response = requests.post(self.url, headers=self.header, cookies=self.cookies, data=self.data)
+        print(response)
+
+        file = open("out.xls", "wb")
+        file.write(response.content)
+        file.close()
+        return ""
+
+    def getUserIdbyKnoxId(self, id):
+        self.url = 'http://splm.sec.samsung.net/wl/com/ums/umsGetUserListMultiWithFunction.do'
+        self.data = 'category=singleID&beforeParseList=%s&isEpSearch=false&contentType=html&callBack=&popup=Y&divLimitYN=N&retired=&searchAll=Y&cond=id&searchWord=%s' % (id, id)
+        response = requests.post(self.url, headers=self.header, cookies = self.cookies, data = self.data)
         html_data = str(response.content)
-        start_index = html_data.find('&mainInChargeUserId=')
-        html_data = html_data[start_index:]
-        end_index = html_data.find('"')
-        user_id = html_data[len('&mainInChargeUserId='):end_index]
-        print(user_id)
-        return html_data
+        # We are going to get user id from html text. In Html text, there is something like
+        # userId = "D160115094933C103239";
+        # mail= "ba.lv@samsung.com";
+
+        user_id = self.findVarFromText(html_data, 'userId = "', '";')
+            
+        return user_id
+
+    def findVarFromText(self, source, str, end_c):
+        start_index = source.find(str)
+        source = source[start_index:]
+        end_index = source.find(end_c)
+        return source[len(str):end_index]

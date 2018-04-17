@@ -17,28 +17,23 @@ if __name__ == "__main__":
     Init().initdb()
 
     # Pass authetication by cookie
-    cookie = {}
-    retry = 0
-    while not 'EP_LOGINID' in cookie and retry < 4:
-        retry += 1
-        WireShark().execute()
-        time.sleep(10)
-        cookie = WireShark().get_cookie_raw()
-
-    if not 'EP_LOGINID' in cookie:
+    cookies = WireShark().get_cookie_raw('Portal')
+    if not KnoxPortal(cookies).is_Portal_logged_in():
         print("Please log in mysingle first and try again")
         sys.exit(1)
 
     # Get employee information
-    alphabet = string.ascii_lowercase  #"abcdefghijklmnopqrstuvwxyz"
+    # alphabet = string.ascii_lowercase  #"abcdefghijklmnopqrstuvwxyz"
+    alphabet = "abcdefghijkl"
     reversed_alphabet = alphabet[::-1]
     helper = SqlLiteHelper()
     
     for c in list(reversed_alphabet):
       print(c)
-      data = KnoxPortal(cookie).get_member_by_c(c)
+      data = KnoxPortal(cookies).get_member_by_c(c)
       helper.insert(data)
 
+    helper.make_db_for_idm()
 
     # plm system
     # result = PLM(cookie).get_my_issues()
